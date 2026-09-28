@@ -1,0 +1,45 @@
+name: CI - Modulo de Donantes
+
+# Se dispara en cada push o pull request hacia main/develop.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # ---------- Integracion Continua (CI) ----------
+  # Instala dependencias, corre las pruebas y verifica la cobertura.
+  test:
+    name: Pruebas unitarias y cobertura
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Descargar el codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Configurar secreto de pruebas
+        run: echo "JWT_SECRET=ci-test-secret" >> "$GITHUB_ENV"
+
+      - name: Ejecutar pruebas con cobertura (falla si es menor a 80%)
+        run: npm test
+
+      - name: Subir reporte de cobertura como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura
+          path: coverage/
+          retention-days: 7
